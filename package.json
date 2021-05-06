@@ -1,0 +1,17 @@
+{
+  "name": "language-heptagon",
+  "version": "0.0.0",
+  "description": "Support of heptagon language",
+  "keywords": [
+    "language",
+    "grammar"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/melldroad/atom-package-language-heptagon"
+  },
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.0.0"
+  }
+}
