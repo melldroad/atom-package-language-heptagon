@@ -1,3 +1,7 @@
+## 0.0.4 [Alpha]
+* Add if-then-else highlighting
+* Add var in let block highlighting
+
 ## 0.0.3 [Alpha]
 * Add inline if-then-else highlighting
 * Add operators highlighting
