@@ -115,13 +115,10 @@ repository:
 	letConstruct:
 		patterns: [
 			{
-				include: "#languageConstant"
-			}
-			{
-				begin: "(merge)\\s*(\\w+)"
+				begin: "(merge)\\s+(\\w+)"
 				beginCaptures:
 					1: name: "keyword.control.heptagon"
-					2: name: "variable.other.heptagon"
+					# 2: name: "variable.other.heptagon" # NOTE: to much colored with this
 				patterns: [
 					{
 						match: "\\((\\w+)\\s*->(.*)\\)"
@@ -132,10 +129,124 @@ repository:
 										include: "#languageBoolean"
 									}
 								]
+							2:
+								patterns: [
+									{
+										include: "#assignment"
+									}
+								]
 					}
 				]
 				end: "(?=;)"
 			}
+			{
+				begin: "(if)\\s+(\\w+)\\s+(?=then)"
+				beginCaptures:
+					1: name: "keyword.control.heptagon"
+					# 2: name: "variable.other.heptagon" # NOTE: to much colored with this
+				patterns: [
+					{
+						match: "(then)\\s+(.*)\\s+(?=else)"
+						captures:
+							1: name: "keyword.control.heptagon"
+							2:
+								patterns: [
+									{
+										include: "#assignment"
+									}
+								]
+					}
+				]
+				end: "(else)\\s+(.*)\\s*(?=;)"
+				endCaptures:
+					1: name: "keyword.control.heptagon"
+					2:
+						patterns: [
+							{
+								include: "#assignment"
+							}
+						]
+			}
+			{
+				match: "(.*)(?=;)"
+				captures:
+					1:
+						patterns: [
+							{
+								include: "#assignment"
+							}
+						]
+				end: "(?=;)"
+			}
+		]
+	assignment:
+		patterns: [
+			{
+				comment: "Function call"
+				match: "\\s*(\\w+)\\s*(?:(<<)(.*)(>>))?\\s*\\((.*)\\)\\s*"
+				captures:
+					1: name: "entity.name.function.heptagon"
+					2: name: "entity.name.function.heptagon" # '<<' is considered as part of the function name
+					# TODO: add coloration for the 3rd group
+					4: name: "entity.name.function.heptagon" # '>>' is considered as part of the function name
+					5:
+						patterns: [
+							{
+								match: "([\\w\\s,]+)"
+								captures:
+									1:
+										patterns: [
+											{
+												match: "([\\w\\s]+)"
+												captures:
+													1:
+														patterns: [
+															{
+																include: "#assignment"
+															}
+														]
+											}
+										]
+							}
+							{
+								match: "\\s*"
+							}
+						]
+			}
+			{
+				comment: "Operator named"
+				match: "\\s*(.*)\\s+(whenot|fby|when)\\s+(.*)\\s*"
+				captures:
+					1: patterns: [ { include: "#assignment" } ]
+					2: name: "keyword.operator.heptagon"
+					3: patterns: [ { include: "#assignment" } ]
+			}
+			{
+				comment: "Operator"
+				match: "\\s*(.*)\\s*(=|\\+|-|%|\\/|\\*|\\+.|-.|%.|\\/.|\\*.)\\s*(.*)\\s*"
+				captures:
+					1: patterns: [ { include: "#assignment" } ]
+					2: name: "keyword.operator.heptagon"
+					3: patterns: [ { include: "#assignment" } ]
+			}
+			{
+				comment: "Parenthesis"
+				match: "\\s*\\((.*)\\)\\s*"
+				captures:
+					1: patterns: [ { include: "#assignment" } ]
+			}
+			{
+				include: "#languageConstant"
+			}
+			{
+				include: "#constantValue"
+			}
+			# { # NOTE: to much colored with this
+			# 	comment: "Other variable name"
+			# 	match: "\\s*(\\w+)\\s*"
+			# 	captures:
+			# 		1: name: "variable.other.heptagon"
+			# }
 		]
 	staticArg:
 		patterns: [
@@ -176,11 +287,16 @@ repository:
 					}
 				]
 	parameterDec:
-		match: "\\s*(\\w+)(?:\\s*\\,\\s*(\\w+))*\\s*:\\s*(\\w+)\\s*"
+		match: "(?:([\\w\\s,]+)):\\s*(\\w+)\\s*"
 		captures:
-			1: name: "variable.other.heptagon"
-			2: name: "variable.other.heptagon"
-			3:
+			1:
+				patterns: [
+					{
+						match: "(\\w+)"
+						captures: 1: name: "variable.other.heptagon"
+					}
+				]
+			2:
 				patterns: [
 					{
 						include: "#type"
@@ -189,11 +305,11 @@ repository:
 	constantValue:
 		patterns: [
 			{
-				match: "\\s*(0x\\h*)\\s*" # Hexadecimal
+				match: "\\s*(0x\\h+)\\s*" # Hexadecimal
 				captures: 1: name: "constant.numeric.heptagon"
 			}
 			{
-				match: "\\s*(\\d*)\\s*" # Integers
+				match: "\\s*(\\d+)\\s*" # Integers
 				captures: 1: name: "constant.numeric.heptagon"
 			}
 		]
