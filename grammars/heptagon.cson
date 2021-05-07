@@ -5,53 +5,151 @@ fileTypes: [
 ]
 patterns: [
 	{
+		include: "#externFile"
+	}
+	{
 		include: "#function"
+	}
+	{
+		include: "#comment"
+	}
+	{
+		include: "#constant"
 	}
 ]
 repository:
-	function:
-		begin: "(fun|node)\\s+(\\w+)\\s*(?:<<([^>]*)>>)?\\s*\\("
+	constant:
+		begin: "\\s*(const)\\s+(\\w+)\\s*:\\s*(\\w+)\\s*(=)\\s*(.*)"
 		beginCaptures:
-			1:
-				name:	"storage.type.heptagon"
-			2:
-				name: "entity.name.function.heptagon"
+			1: name: "storage.type.heptagon"
+			2: name: "variable.other.heptagon"
+			3:
+				patterns: [
+					{
+						include: "#type"
+					}
+				]
+			4: name: "keyword.operator.heptagon"
+			5: patterns: [
+				{
+					include: "#constantValue"
+				}
+			]
+		end: "\\s*$"
+	comment:
+		begin: "\\(\\*"
+		name: "comment.block.heptagon"
+		end: "\\*\\)"
+	externFile:
+		match: "^\\s*(open)\\s*(\\w*)"
+		captures:
+			1: name: "storage.type.heptagon"
+			2: name: "variable.other.heptagon"
+	function:
+		begin: "(fun|node)\\s+(\\w+)\\s*(?:<<([^>]*)>>)?\\s*\\(([\\w\\s:;]*)\\)\\s*(returns)\\s*\\(([\\w\\s:;]*)\\)"
+		beginCaptures:
+			1: name: "storage.type.heptagon"
+			2: name: "entity.name.function.heptagon"
 			3:
 				patterns: [
 					{
 						include: "#staticArg"
 					}
 				]
-		patterns: [
-			{
-				include: "#parameterList"
-			}
-		]
-		end: "\\)\\s*(returns)\\s*\\((.*)\\)"
-		endCaptures:
-			1:
-				name: "keyword.control.heptagon"
-			2:
+			4:
 				patterns: [
 					{
 						include: "#parameterList"
 					}
 				]
+			5: name: "keyword.control.heptagon"
+			6:
+				patterns: [
+					{
+						include: "#parameterList"
+					}
+				]
+		patterns: [
+			{
+				begin: "let"
+				beginCaptures: 0: name: "keyword.control.heptagon"
+				patterns: [
+					{
+						include: "#comment"
+					}
+					{
+						begin: "\\s*(\\w+|\\(\\))\\s*(=)\\s*"
+						beginCaptures:
+							1: name: "variable.other.heptagon"
+							2: name: "keyword.operator.heptagon"
+						patterns: [
+							{
+								include: "#letConstruct"
+							}
+						]
+						end: "\\s*;"
+					}
+				]
+				end: "(?=tel)"
+			}
+			{
+				begin: "var"
+				beginCaptures: 0: name: "keyword.control.heptagon"
+				patterns: [
+					{
+						match: "\\s*([\\s\\w,:]+);"
+						captures:
+							1:
+								patterns: [
+									{
+										include: "#parameterDec"
+									}
+								]
+					}
+				]
+				end: "(?=(let|tel))"
+			}
+		]
+		end: "(tel)"
+		endCaptures: 1: name: "keyword.control.heptagon"
+	letConstruct:
+		patterns: [
+			{
+				include: "#languageConstant"
+			}
+			{
+				begin: "(merge)\\s*(\\w+)"
+				beginCaptures:
+					1: name: "keyword.control.heptagon"
+					2: name: "variable.other.heptagon"
+				patterns: [
+					{
+						match: "\\((\\w+)\\s*->(.*)\\)"
+						captures:
+							1:
+								patterns: [
+									{
+										include: "#languageBoolean"
+									}
+								]
+					}
+				]
+				end: "(?=;)"
+			}
+		]
 	staticArg:
 		patterns: [
 			{
 				match: "(\\w+)\\s*:\\s*(\\w+)(?:\\s*\\,\\s*(\\w+)\\s*:\\s*(\\w+))*"
 				captures:
-					1:
-						name: "variable.parameter.heptagon"
+					1: name: "variable.parameter.heptagon"
 					2:
 						patterns: [
 							{
 								include: "#type"
 							}
 						]
-					3:
-						name: "variable.parameter.heptagon"
+					3: name: "variable.parameter.heptagon"
 					4:
 						patterns: [
 							{
@@ -61,24 +159,53 @@ repository:
 			}
 		]
 	parameterList:
-		match: "(?:(\\w+)\\s*:\\s*(\\w+)(?:\\s*;\\s*(\\w+)\\s*:\\s*(\\w+))*)?\\s*"
+		match: "\\s*(?:(\\w+)\\s*:\\s*(\\w+)(?:\\s*;\\s*(\\w+)\\s*:\\s*(\\w+))*)?\\s*"
 		captures:
-			1:
-				name: "variable.parameter.heptagon"
+			1: name: "variable.parameter.heptagon"
 			2:
 				patterns: [
 					{
 						include: "#type"
 					}
 				]
-			3:
-				name: "variable.parameter.heptagon"
+			3: name: "variable.parameter.heptagon"
 			4:
 				patterns: [
 					{
 						include: "#type"
 					}
 				]
+	parameterDec:
+		match: "\\s*(\\w+)(?:\\s*\\,\\s*(\\w+))*\\s*:\\s*(\\w+)\\s*"
+		captures:
+			1: name: "variable.other.heptagon"
+			2: name: "variable.other.heptagon"
+			3:
+				patterns: [
+					{
+						include: "#type"
+					}
+				]
+	constantValue:
+		patterns: [
+			{
+				match: "\\s*(0x\\h*)\\s*" # Hexadecimal
+				captures: 1: name: "constant.numeric.heptagon"
+			}
+			{
+				match: "\\s*(\\d*)\\s*" # Integers
+				captures: 1: name: "constant.numeric.heptagon"
+			}
+		]
 	type:
 		match: "(int|bool)"
 		name: "entity.name.type.heptagon"
+	languageConstant:
+		patterns: [
+			{
+				include: "#languageBoolean"
+			}
+		]
+	languageBoolean:
+		match: "(true|false)"
+		captures: 1: name: "constant.language.heptagon"
