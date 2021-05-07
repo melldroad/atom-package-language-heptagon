@@ -78,16 +78,33 @@ repository:
 						include: "#comment"
 					}
 					{
-						begin: "\\s*(\\w+|\\(\\))\\s*(=)\\s*"
+						include: "#letConstruct"
+					}
+					{
+						begin: "(if)\\s+(\\w+)\\s+(then)"
 						beginCaptures:
-							1: name: "variable.other.heptagon"
-							2: name: "keyword.operator.heptagon"
+							1: name: "keyword.control.heptagon"
+							# 2: name: "variable.other.heptagon" # NOTE: to much colored with this
+							3: name: "keyword.control.heptagon"
 						patterns: [
 							{
 								include: "#letConstruct"
 							}
+							{
+								begin: "(else)"
+								beginCaptures:
+									1: name: "keyword.control.heptagon"
+								patterns: [
+									{
+										include: "#letConstruct"
+									}
+								]
+								end: "(?=end;)"
+							}
 						]
-						end: "\\s*;"
+						end: "(end);"
+						endCaptures:
+							1: name: "keyword.control.heptagon"
 					}
 				]
 				end: "(?=tel)"
@@ -113,6 +130,43 @@ repository:
 		end: "(tel)"
 		endCaptures: 1: name: "keyword.control.heptagon"
 	letConstruct:
+		patterns: [
+			{
+				include: "#letConstruct2"
+			}
+			{
+				begin: "(var)\\s*"
+				beginCaptures: 1: name: "keyword.control.heptagon"
+				patterns: [
+					{
+						match: "\\s*([\\s\\w,:]+);"
+						captures:
+							1:
+								patterns: [
+									{
+										include: "#parameterDec"
+									}
+								]
+					}
+				]
+				end: "(?=(in))"
+			}
+			{
+				begin: "(in)\\s*"
+				beginCaptures: 1: name: "keyword.control.heptagon"
+				patterns: [
+					{
+						include: "#letConstruct2"
+					}
+				]
+				end: "(?=(end|tel))"
+			}
+		]
+	letConstruct2:
+		begin: "\\s*(\\w+|\\(\\))\\s*(=)\\s*"
+		beginCaptures:
+			1: name: "variable.other.heptagon"
+			2: name: "keyword.operator.heptagon"
 		patterns: [
 			{
 				begin: "(merge)\\s+(\\w+)"
@@ -179,6 +233,7 @@ repository:
 				end: "(?=;)"
 			}
 		]
+		end: "\\s*;"
 	assignment:
 		patterns: [
 			{
