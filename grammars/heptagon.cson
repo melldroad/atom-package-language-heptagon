@@ -16,8 +16,42 @@ patterns: [
 	{
 		include: "#constant"
 	}
+	{
+		include: "#userTypes"
+	}
 ]
 repository:
+	userTypes:
+		begin: "(type)\\s*(\\w+)\\s*=\\s*{"
+		beginCaptures:
+			1: name: "storage.type.heptagon" # to verify
+			2: name: "variable.other.heptagon" # to verify
+		patterns: [
+			{
+				match: "\\s*([\\s\\w\^,:]+);"
+				captures:
+					1:
+						patterns: [
+							{
+								include: "#parameterDec"
+							}
+						]
+			}
+			{
+				match: "\\s*([\\s\\w\^,:]+)"
+				captures:
+					1:
+						patterns: [
+							{
+								include: "#parameterDec"
+							}
+						]
+				end: "(?=\})"
+			}
+		]
+
+		end: "}"
+
 	constant:
 		begin: "\\s*(const)\\s+(\\w+)\\s*:\\s*(\\w+)\\s*(=)\\s*(.*)"
 		beginCaptures:
@@ -46,7 +80,7 @@ repository:
 			1: name: "storage.type.heptagon"
 			2: name: "variable.other.heptagon"
 	function:
-		begin: "(fun|node)\\s+(\\w+)\\s*(?:<<([^>]*)>>)?\\s*\\(([\\w\\s:;]*)\\)\\s*(returns)\\s*\\(([\\w\\s:;]*)\\)"
+		begin: "(fun|node)\\s+(\\w+)\\s*(?:<<([^>]*)>>)?\\s*\\(([\\w\\s\^:;]*)\\)"
 		beginCaptures:
 			1: name: "storage.type.heptagon"
 			2: name: "entity.name.function.heptagon"
@@ -62,14 +96,19 @@ repository:
 						include: "#parameterList"
 					}
 				]
-			5: name: "keyword.control.heptagon"
-			6:
-				patterns: [
-					{
-						include: "#parameterList"
-					}
-				]
 		patterns: [
+			{
+				begin: "(returns)\\s*\\(([\\w\\s\^:;]*)\\)"
+				beginCaptures:
+					1: name: "keyword.control.heptagon"
+					2:
+						patterns: [
+							{
+								include: "#parameterList"
+							}
+						]
+				end: "(?=let|var)"
+			}
 			{
 				begin: "let"
 				beginCaptures: 0: name: "keyword.control.heptagon"
@@ -114,7 +153,7 @@ repository:
 				beginCaptures: 0: name: "keyword.control.heptagon"
 				patterns: [
 					{
-						match: "\\s*([\\s\\w,:]+);"
+						match: "\\s*([\\s\\w\\d\^,:]+);"
 						captures:
 							1:
 								patterns: [
@@ -139,7 +178,7 @@ repository:
 				beginCaptures: 1: name: "keyword.control.heptagon"
 				patterns: [
 					{
-						match: "\\s*([\\s\\w,:]+);"
+						match: "\\s*([\\s\\w\^,:]+);"
 						captures:
 							1:
 								patterns: [
@@ -222,6 +261,42 @@ repository:
 						]
 			}
 			{
+				comment: "Multiline Structures"
+				begin: "{"
+				patterns: [
+					{
+						match: "(\\w+)\\s*(=)([^;]*)(?=})"
+						captures:
+							1: name: "variable.other.heptagon"
+							2: name: "keyword.operator.heptagon"
+							3: patterns: [ { include: "#assignment" }]
+					}
+					{
+						match: "(\\w+)\\s*(=)([^;]*);"
+						captures:
+							1: name: "variable.other.heptagon"
+							2: name: "keyword.operator.heptagon"
+							3: patterns: [ { include: "#assignment" }]
+					}
+					{
+						match: "(\\w+)\\s*(=)([^;]*)"
+						captures:
+							1: name: "variable.other.heptagon"
+							2: name: "keyword.operator.heptagon"
+							3: patterns: [ { include: "#assignment" }]
+					}
+					{
+						match: "(\\w+)\\s+(with)\\s+\.([\\w\.]+)\\s*(=)([^;]*)"
+						captures:
+							2: name: "keyword.other.heptagon"
+							3: name: "variable.other.heptagon"
+							4: name: "keyword.operator.heptagon"
+							5: patterns: [ { include: "#assignment" }]
+					}
+				]
+				end: "}"
+			}
+			{
 				match: "(.*)(?=;)"
 				captures:
 					1:
@@ -236,6 +311,45 @@ repository:
 		end: "\\s*;"
 	assignment:
 		patterns: [
+			{
+				comment: "Iterator Function call"
+				match: "\\s*(\\w+)(<<)([\\w\\s,]*)(>>)\\s*(\\w+)\\s*\\((.*)\\)\\s*"
+				captures:
+					1:
+						patterns: [
+							{
+								match: "(fold|map|foldi|mapi|mapfold)"
+								name: "keyword.other.heptagon"
+							}
+						]
+					2: name: "keyword.other.heptagon"
+					# TODO: add coloration for the 3rd group
+					4: name: "keyword.other.heptagon"
+					5: name: "entity.name.function.heptagon"
+					6:
+						patterns: [
+							{
+								match: "([\\w\\s,]+)"
+								captures:
+									1:
+										patterns: [
+											{
+												match: "([\\w\\s]+)"
+												captures:
+													1:
+														patterns: [
+															{
+																include: "#assignment"
+															}
+														]
+											}
+										]
+							}
+							{
+								match: "\\s*"
+							}
+						]
+			}
 			{
 				comment: "Function call"
 				match: "\\s*(\\w+)\\s*(?:(<<)(.*)(>>))?\\s*\\((.*)\\)\\s*"
@@ -278,7 +392,7 @@ repository:
 			}
 			{
 				comment: "Operator"
-				match: "\\s*(.*)\\s*(=|\\+|-|%|\\/|\\*|\\+.|-.|%.|\\/.|\\*.)\\s*(.*)\\s*"
+				match: "\\s*(.*)\\s*(\\+.|-.|%.|\\/.|\\*.|=|\\+|-|%|\\/|\\*)\\s*(.*)\\s*"
 				captures:
 					1: patterns: [ { include: "#assignment" } ]
 					2: name: "keyword.operator.heptagon"
@@ -294,14 +408,20 @@ repository:
 				include: "#languageConstant"
 			}
 			{
+				comment: "Other variable name"
+				match: "\\s*([a-z_][a-z0-9_]+)(?:\.([a-z_][a-z0-9_]+))+\\s*"
+				# captures: # NOTE: to much colored with this
+				# 	1: name: "variable.other.heptagon"
+			}
+			{
+				comment: "Other variable name"
+				match: "\\s*([a-z_][a-z0-9_]+)\\s*"
+				# captures: # NOTE: to much colored with this
+				# 	1: name: "variable.other.heptagon"
+			}
+			{
 				include: "#constantValue"
 			}
-			# { # NOTE: to much colored with this
-			# 	comment: "Other variable name"
-			# 	match: "\\s*(\\w+)\\s*"
-			# 	captures:
-			# 		1: name: "variable.other.heptagon"
-			# }
 		]
 	staticArg:
 		patterns: [
@@ -325,7 +445,7 @@ repository:
 			}
 		]
 	parameterList:
-		match: "\\s*(?:(\\w+)\\s*:\\s*(\\w+)(?:\\s*;\\s*(\\w+)\\s*:\\s*(\\w+))*)?\\s*"
+		match: "\\s*(?:(\\w+)\\s*:\\s*([\\w\^]+)(?:\\s*;\\s*(\\w+)\\s*:\\s*([\\w\^]+))*)?\\s*"
 		captures:
 			1: name: "variable.parameter.heptagon"
 			2:
@@ -342,7 +462,7 @@ repository:
 					}
 				]
 	parameterDec:
-		match: "(?:([\\w\\s,]+)):\\s*(\\w+)\\s*"
+		match: "([\\w\\s,]+):\\s*([\\w\\d\^]+)\\s*"
 		captures:
 			1:
 				patterns: [
@@ -367,10 +487,34 @@ repository:
 				match: "\\s*(\\d+)\\s*" # Integers
 				captures: 1: name: "constant.numeric.heptagon"
 			}
+			{
+				match: "\\s*(\\d+.\\d+)\\s*" # Floats
+				captures: 1: name: "constant.numeric.heptagon"
+			}
 		]
 	type:
-		match: "(int|bool)"
-		name: "entity.name.type.heptagon"
+		patterns: [
+			{ # Arrays fixed sized
+				match: "([a-z_]+)([0-9\^][0-9]+)"
+				captures:
+					1: patterns: [ { include: "#type" } ]
+					2: name: "entity.name.type.heptagon"
+			}
+			{ # Arrays variable sized
+				match: "([a-z_]+)([a-z\^][a-z]+)"
+				captures:
+					1: patterns: [ { include: "#type" } ]
+					2: name: "entity.name.type.heptagon"
+			}
+			{ # Natives
+				match: "(int|bool|float)"
+				name: "entity.name.type.heptagon"
+			}
+			{ # User types
+				match: "([a-z_]+)"
+				name: "entity.name.type.heptagon"
+			}
+		]
 	languageConstant:
 		patterns: [
 			{
